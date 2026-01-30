@@ -1,0 +1,15 @@
+langchain
+langchain-openai
+langchain-community
+pypdf
+tiktoken
+faiss-cpu
+redis
+mangum
+fastapi
+uvicorn
+python-dotenv
+pytest
+openai
+boto3
+python-multipart==0.0.20

@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  legal-rag-summarizer
+  Serverless RAG application for summarizing legal PDFs
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 512
+    Environment:
+      Variables:
+        OPENAI_API_KEY: !Ref OpenAiApiKey
+        REDIS_URL: !Ref RedisUrl
+
+Parameters:
+  OpenAiApiKey:
+    Type: String
+    Description: OpenAI API Key
+    NoEcho: true
+  RedisUrl:
+    Type: String
+    Description: Redis Connection String (e.g. redis://host:port)
+    Default: redis://localhost:6379
+
+Resources:
+  SummarizerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.app.handler
+      Runtime: python3.11
+      Architectures:
+        - x86_64
+      Events:
+        SummarizeApi:
+          Type: Api
+          Properties:
+            Path: /summarize
+            Method: post
+        HealthCheck:
+          Type: Api
+          Properties:
+            Path: /
+            Method: get
+      Policies:
+        - Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: "*"
+
+Outputs:
+  SummarizerApi:
+    Description: "API Gateway endpoint URL for Prod stage for Summarizer function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
