@@ -1,9 +1,11 @@
 import os
-import tempfile
+import logging
 from typing import List, Optional
 from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
+
+logger = logging.getLogger(__name__)
 
 def load_and_split_pdf(file_path: str, chunk_size: int = 2000, chunk_overlap: int = 200) -> List[Document]:
     """
@@ -17,29 +19,22 @@ def load_and_split_pdf(file_path: str, chunk_size: int = 2000, chunk_overlap: in
     Returns:
         List[Document]: List of split documents.
     """
-    loader = PyPDFLoader(file_path)
-    # PyPDFLoader loads pages. We might want to split them further if pages are dense.
-    documents = loader.load()
-    
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", ". ", " ", ""]
-    )
-    
-    split_docs = text_splitter.split_documents(documents)
-    return split_docs
-
-def process_uploaded_file(file_content: bytes, filename: str) -> List[Document]:
-    """
-    Helper to save bytes to a temp file and process it.
-    """
-    suffix = os.path.splitext(filename)[1]
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(file_content)
-        tmp_path = tmp.name
-        
+    logger.info(f"Loading and splitting PDF from {file_path}")
     try:
-        return load_and_split_pdf(tmp_path)
-    finally:
-        os.remove(tmp_path)
+        loader = PyPDFLoader(file_path)
+        # PyPDFLoader loads pages. We might want to split them further if pages are dense.
+        documents = loader.load()
+        logger.debug(f"Loaded {len(documents)} pages from PDF")
+
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            separators=["\n\n", "\n", ". ", " ", ""]
+        )
+
+        split_docs = text_splitter.split_documents(documents)
+        logger.info(f"Split document into {len(split_docs)} chunks")
+        return split_docs
+    except Exception as e:
+        logger.error(f"Error loading/splitting PDF: {str(e)}")
+        raise
