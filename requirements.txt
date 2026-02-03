@@ -13,3 +13,4 @@ pytest
 openai
 boto3
 python-multipart==0.0.20
+fakeredis
